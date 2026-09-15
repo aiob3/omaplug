@@ -10,11 +10,14 @@ import sys
 import tempfile
 
 ENTRY = {
-    "icon": "󱓖", "label": "Plugin Manager",
+    "icon": "󱓖", "label": "Omaplug",
     "description": "Manage Omarchy plugins with Omaplug",
     "aliases": ["omaplug", "plugins"],
     "action": "omarchy-shell omaplug open",
 }
+ENTRY_KEY = "apps.omaplug"
+LEGACY_KEY = "omaplug"
+LEGACY_ENTRY = dict(ENTRY, label="Plugin Manager")
 BLOCK = re.compile(r'\n  // omaplug-menu-start\n.*?  // omaplug-menu-end\n', re.S)
 TOKEN = re.compile(r'"(?:\\.|[^"\\])*"|//[^\n]*|\s+|.', re.S)
 
@@ -48,7 +51,7 @@ def render(raw, enabled):
     blocks = BLOCK.findall(raw)
     if len(blocks) > 1:
         raise ValueError("Multiple Omaplug menu entries found; please review the menu file.")
-    if blocks and entries.get("omaplug") != ENTRY:
+    if blocks and entries.get(ENTRY_KEY) != ENTRY and entries.get(LEGACY_KEY) != LEGACY_ENTRY:
         raise ValueError("The Omaplug menu entry was edited; please review it before changing this setting.")
     if not blocks and "omaplug" in entries:
         raise ValueError("An existing custom Omaplug menu entry must be managed manually.")
@@ -56,7 +59,7 @@ def render(raw, enabled):
     entries, offset = parse(base)
     if not enabled:
         return base
-    block = '\n  // omaplug-menu-start\n  "omaplug": ' + json.dumps(ENTRY, ensure_ascii=False)
+    block = '\n  // omaplug-menu-start\n  "' + ENTRY_KEY + '": ' + json.dumps(ENTRY, ensure_ascii=False)
     block += ("," if entries else "") + '\n  // omaplug-menu-end\n'
     result = base[:offset] + block + base[offset:]
     parse(result)
@@ -81,7 +84,7 @@ def run(action):
     if action == "status":
         raw, _ = read(path)
         entries, _ = parse(raw)
-        return entries.get("omaplug") == ENTRY
+        return entries.get(ENTRY_KEY) == ENTRY
     path.parent.mkdir(parents=True, exist_ok=True)
     lock = os.open(path.parent / ".omaplug-menu.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     with os.fdopen(lock, "w") as stream:

@@ -20,14 +20,14 @@ class MenuEntryTest(unittest.TestCase):
                     '{"items": {"foo": {"label": "https://example.org/a,}"}}, "extra": 1}'):
             with self.subTest(raw=raw):
                 enabled = menu.render(raw, True)
-                self.assertEqual(menu.parse(enabled)[0]["omaplug"], menu.ENTRY)
+                self.assertEqual(menu.parse(enabled)[0][menu.ENTRY_KEY], menu.ENTRY)
                 self.assertEqual(menu.render(enabled, True), enabled)
                 self.assertEqual(menu.render(enabled, False), raw)
                 self.assertEqual(menu.render(raw, False), raw)
 
     def test_refuses_invalid_or_custom_content(self):
         for raw in ('broken', '[]', '{"omaplug": {"action": "custom"}}',
-                    menu.render('{}', True).replace('Plugin Manager', 'My Manager')):
+                    menu.render('{}', True).replace('Omaplug', 'My Manager')):
             with self.subTest(raw=raw), self.assertRaises(ValueError):
                 menu.render(raw, False)
 
