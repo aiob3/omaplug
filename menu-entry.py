@@ -13,11 +13,12 @@ ENTRY = {
     "icon": "󱓖", "label": "Omaplug",
     "description": "Manage Omarchy plugins with Omaplug",
     "aliases": ["omaplug", "plugins"],
-    "action": "omarchy-shell omaplug open",
+    "action": "omarchy-shell shell summon omaplug",
 }
 ENTRY_KEY = "apps.omaplug"
 LEGACY_KEY = "omaplug"
 LEGACY_ENTRY = dict(ENTRY, label="Plugin Manager")
+OLD_ACTION_ENTRY = dict(ENTRY, action="omarchy-shell omaplug open")
 BLOCK = re.compile(r'\n  // omaplug-menu-start\n.*?  // omaplug-menu-end\n', re.S)
 TOKEN = re.compile(r'"(?:\\.|[^"\\])*"|//[^\n]*|\s+|.', re.S)
 
@@ -51,7 +52,7 @@ def render(raw, enabled):
     blocks = BLOCK.findall(raw)
     if len(blocks) > 1:
         raise ValueError("Multiple Omaplug menu entries found; please review the menu file.")
-    if blocks and entries.get(ENTRY_KEY) != ENTRY and entries.get(LEGACY_KEY) != LEGACY_ENTRY:
+    if blocks and entries.get(ENTRY_KEY) not in (ENTRY, OLD_ACTION_ENTRY) and entries.get(LEGACY_KEY) != LEGACY_ENTRY:
         raise ValueError("The Omaplug menu entry was edited; please review it before changing this setting.")
     if not blocks and "omaplug" in entries:
         raise ValueError("An existing custom Omaplug menu entry must be managed manually.")
