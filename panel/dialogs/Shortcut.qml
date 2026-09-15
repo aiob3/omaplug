@@ -13,6 +13,7 @@ Rectangle {
   required property bool running
   required property string pluginName
   required property string savedShortcut
+  required property string pendingShortcut
   required property string result
   required property color foreground
   required property string fontFamily
@@ -60,7 +61,7 @@ Rectangle {
         font.bold: true
       }
       Label {
-        text: "Press a key combination to save it automatically. Conflicts appear below."
+        text: "Press a shortcut to check it. Available shortcuts save automatically; conflicts can be replaced."
         Layout.fillWidth: true
         wrapMode: Text.WordWrap
         color: dialog.foreground
@@ -95,6 +96,8 @@ Rectangle {
           else {
             var names = {}
             names[Qt.Key_Space] = "SPACE"
+            names[Qt.Key_Slash] = "SLASH"
+            names[Qt.Key_Question] = "SLASH"
             names[Qt.Key_Return] = "RETURN"
             names[Qt.Key_Tab] = "TAB"
             names[Qt.Key_Backtab] = "TAB"
@@ -116,7 +119,7 @@ Rectangle {
           if (event.modifiers & Qt.MetaModifier) parts.push("SUPER")
           if (event.modifiers & Qt.ControlModifier) parts.push("CTRL")
           if (event.modifiers & Qt.AltModifier) parts.push("ALT")
-          if (event.modifiers & Qt.ShiftModifier) parts.push("SHIFT")
+          if ((event.modifiers & Qt.ShiftModifier) || event.key === Qt.Key_Question) parts.push("SHIFT")
           if (!parts.length || (event.modifiers & (Qt.KeypadModifier | Qt.GroupSwitchModifier))) return
           captureBox.heldKey = event.key
           dialog.capturedShortcut = parts.concat([key]).join(" + ")
@@ -160,6 +163,18 @@ Rectangle {
           color: /saved|removed|Available|No shortcut/.test(dialog.result) ? Color.accent : Color.urgent
           font.family: dialog.fontFamily
           font.pixelSize: Style.font.caption
+        }
+        Button {
+          objectName: "replaceShortcutButton"
+          bordered: true
+          borderSpec: Border.controlSpec("normal", foreground, accent)
+          visible: dialog.pendingShortcut !== ""
+          text: "Replace"
+          enabled: !dialog.running
+          foreground: Color.urgent
+          fontFamily: dialog.fontFamily
+          fontSize: Style.font.caption
+          onClicked: dialog.actionRequested("replace", dialog.pendingShortcut)
         }
         Button {
           bordered: true

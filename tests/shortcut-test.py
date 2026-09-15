@@ -14,6 +14,13 @@ spec.loader.exec_module(shortcut)
 
 
 class ShortcutTest(unittest.TestCase):
+    def test_legacy_keysym_does_not_block_new_shortcut(self):
+        raw = '-- personal\n' + shortcut.block('test', 'SUPER + SHIFT + bracketleft')
+        self.assertEqual(shortcut.saved(raw, 'test'), ('SUPER + SHIFT + bracketleft', '-- personal\n'))
+        edited = raw.replace('"Omaplug: test"', '"Edited"')
+        with self.assertRaises(ValueError):
+            shortcut.saved(edited, 'test')
+
     def test_combinations_and_injection(self):
         self.assertEqual(shortcut.combination("ctrl + super + p"), ("SUPER + CTRL + P", 68, "P"))
         for text in ('P', 'SUPER + P; reboot', 'SUPER + $(id)', 'CTRL + CTRL + P', 'SUPER + P + Q'):
@@ -60,8 +67,12 @@ class ShortcutTest(unittest.TestCase):
                     shortcut.run("save", "test", "SUPER + CTRL + P")
                 self.assertEqual(path.read_text(), original)
                 binds.append({"modmask": 68, "key": "p", "description": "Other"})
-                with self.assertRaisesRegex(ValueError, "Already assigned"):
-                    shortcut.run("save", "test", "SUPER + CTRL + P")
+                result = shortcut.run("save", "test", "SUPER + CTRL + P")
+                self.assertEqual(result['pendingShortcut'], 'SUPER + CTRL + P')
+                self.assertEqual(path.read_text(), original)
+                shortcut.run('replace', 'test', 'SUPER + CTRL + P')
+                self.assertIn('hl.unbind("SUPER + CTRL + P")', path.read_text())
+                shortcut.run('remove', 'test')
                 self.assertEqual(path.read_text(), original)
                 path.unlink()
                 target = Path(folder) / "target"

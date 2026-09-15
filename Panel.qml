@@ -337,6 +337,7 @@ Panel {
   property string shortcutPluginName: ""
   property string shortcutSaved: ""
   property string shortcutResult: ""
+  property string shortcutPending: ""
 
   function openShortcut(id, name) {
     if (shortcutProcess.running) return
@@ -350,6 +351,7 @@ Panel {
   function runShortcutAction(action, combination) {
     if (shortcutProcess.running) return
     root.shortcutResult = ""
+    root.shortcutPending = ""
     shortcutProcess.action = action
     shortcutProcess.command = ["python3",
       decodeURIComponent(String(Qt.resolvedUrl("shortcut.py")).replace(/^file:\/\//, "")),
@@ -364,8 +366,9 @@ Panel {
       try {
         var data = JSON.parse(shortcutOutput.text)
         root.shortcutResult = data.error || data.message || "Shortcut operation failed."
+        root.shortcutPending = exitCode === 0 ? (data.pendingShortcut || "") : ""
         if (exitCode === 0) {
-          if (action === "status" || action === "save" || action === "remove")
+          if (action === "status" || action === "save" || action === "replace" || action === "remove")
             root.shortcutSaved = data.shortcut || ""
         }
       } catch (error) {
@@ -2337,6 +2340,7 @@ Panel {
       running: shortcutProcess.running
       pluginName: root.shortcutPluginName
       savedShortcut: root.shortcutSaved
+      pendingShortcut: root.shortcutPending
       result: root.shortcutResult
       foreground: root.contentForeground
       fontFamily: root.contentFontFamily
