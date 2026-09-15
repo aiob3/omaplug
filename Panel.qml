@@ -2243,6 +2243,7 @@ Panel {
       rows: root.updateCheckRows
       updateStates: root.updateStates
       marketplaceMap: root.marketplaceMap
+      localCommits: root.pluginCommits
       marketplaceFetching: root.marketplaceFetching
       marketplaceFetchFailed: root.marketplaceFetchFailed
       checking: root.checkingUpdates
