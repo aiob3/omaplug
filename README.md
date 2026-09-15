@@ -57,7 +57,24 @@ Omaplug is listed on the marketplace: [plugins.omarchy.org/plugin.html?id=omaplu
 omarchy plugin add https://github.com/fross100/omaplug --enable
 ```
 
+## Settings
+
+Click the gear to the right of Install. **Show Plugin Manager in Omarchy menu** adds a searchable menu entry when switched on, and removes it when switched off. It is off by default and preserves your other menu entries and comments. Omaplug must remain enabled and available on the bar for this shortcut to open its popup.
+
+Settings also provides the automatic update check switch and interval.
+
+**Update scope** controls bulk updates: **Verified only**, **Verified + Update Unverified**, or **All plugins** (the default). The bulk-update button changes its label to match. Individual updates remain available regardless of the scope. For a repository containing several plugins, all must match the selected scope for a bulk update.
+
+## Plugin keyboard shortcuts
+
+Choose **Keyboard shortcut** from a plugin's **⋮** menu, then press your desired combination, such as `Super + Ctrl + Alt + P`. Omaplug checks live Hyprland bindings and saves automatically if the combination is free. If it is taken, the existing shortcut stays unchanged and you can press another combination. **Remove shortcut** removes only that plugin's Omaplug-managed binding. **Done** or Escape closes the recorder.
+
+This editor uses Omarchy's `~/.config/hypr/bindings.lua`, preserves existing bindings, and reloads Hyprland after a change. It refuses conflicting or unresolved physical-key combinations. Plugins must remain enabled; bar widgets must stay on the bar and expose a working popup. Hiding bar icons is not part of this feature.
+
 ## Remove
+
+If you enabled the menu shortcut, first turn off **Settings → Show Plugin Manager in Omarchy menu**.
+Remove any keyboard shortcuts assigned through Omaplug before uninstalling their plugins.
 
 ```bash
 omarchy plugin remove omaplug
@@ -85,7 +102,7 @@ omarchy-restart-shell
 
 - Omarchy 4.x
 - Quickshell
-- `git`, `jq`, and the `omarchy` CLI
+- `git`, `jq`, `python3`, and the `omarchy` CLI
 - Standard coreutils (`setsid`, `nohup`, `timeout`, `sed`)
 
 ## License
