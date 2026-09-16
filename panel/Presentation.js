@@ -14,9 +14,10 @@ function shortSha(sha) {
 }
 
 function normalizedGitHubUrl(repoUrl) {
-  var url = String(repoUrl || "")
-  if (!/^https:\/\/github\.com\//.test(url)) return ""
-  return url.replace(/\.git\/?$/, "").replace(/\/+$/, "")
+  var url = String(repoUrl || "").trim()
+  var match = url.match(/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)([A-Za-z0-9][A-Za-z0-9_.-]*)\/([A-Za-z0-9][A-Za-z0-9_.-]*?)(?:\.git)?\/?$/)
+  if (!match || match[1].indexOf("..") !== -1 || match[2].indexOf("..") !== -1) return ""
+  return "https://github.com/" + match[1] + "/" + match[2]
 }
 
 function commitUrl(repoUrl, sha) {

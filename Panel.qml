@@ -704,10 +704,8 @@ Panel {
   }
 
   function openPluginRepo(sourceKey) {
-    var url = root.repoUrlFor(sourceKey)
-    // Only hand http(s) URLs to the browser: a malicious plugin's git remote
-    // could otherwise use file://, command:, or custom schemes via xdg-open.
-    if (url && /^https?:\/\//.test(url)) Qt.openUrlExternally(url)
+    var url = Presentation.normalizedGitHubUrl(root.repoUrlFor(sourceKey))
+    if (url !== "") root.openExternal(url)
   }
 
   // Open an http(s) URL in the browser. QDesktopServices can silently no-op
@@ -1344,14 +1342,15 @@ Panel {
   }
 
   function installReviewEntry() {
-    var url = String(root.installPendingUrl).replace(/\.git$/, "").replace(/\/$/, "")
+    var url = Presentation.normalizedGitHubUrl(root.installPendingUrl)
+    if (url === "") return null
     var repo = url.substring(url.lastIndexOf("/") + 1).toLowerCase()
     var parts = url.split("/")
     var owner = parts.length > 1 ? parts[parts.length - 2].toLowerCase().replace(/[^a-z0-9]/g, "") : ""
     var repoSlug = repo.replace(/^omarchy[-_]/, "").replace(/[^a-z0-9]/g, "")
     for (var id in root.marketplaceMap) {
       var entry = root.marketplaceMap[id]
-      var listedRepo = String(entry.repositoryUrl || "").replace(/\.git$/, "").replace(/\/$/, "").toLowerCase()
+      var listedRepo = Presentation.normalizedGitHubUrl(entry.repositoryUrl).toLowerCase()
       var listedId = String(id).toLowerCase()
       var idSlug = listedId.replace(/[^a-z0-9]/g, "")
       if (listedRepo === url.toLowerCase() || listedId === repo
@@ -1370,9 +1369,10 @@ Panel {
   }
 
   function installAlreadyInstalled() {
-    var target = String(root.installPendingUrl).replace(/\.git$/, "").replace(/\/$/, "").toLowerCase()
+    var target = Presentation.normalizedGitHubUrl(root.installPendingUrl).toLowerCase()
+    if (target === "") return false
     for (var key in root.pluginRepos) {
-      var repo = String(root.pluginRepos[key] || "").replace(/\.git$/, "").replace(/\/$/, "").toLowerCase()
+      var repo = Presentation.normalizedGitHubUrl(root.pluginRepos[key]).toLowerCase()
       if (repo !== "" && repo === target) return true
     }
     return false
