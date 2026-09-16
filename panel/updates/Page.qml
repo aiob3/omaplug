@@ -100,7 +100,7 @@ Rectangle {
   // behind this page - the main plugin list is still visible/enabled there.
   // Declared before the Loader so its buttons/rows still take priority for
   // clicks that actually land on them; same pattern as the dialogs'
-  // full-page MouseArea (panel/dialogs/Confirm.qml, Install.qml).
+  // full-page MouseArea (panel/dialogs/Confirm.qml, Review.qml).
   MouseArea {
     anchors.fill: parent
     onClicked: {}

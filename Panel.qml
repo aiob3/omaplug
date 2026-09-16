@@ -313,6 +313,7 @@ Panel {
   // policy explicit. installPendingUrl carries the extracted URL.
   property bool installConfirmOpen: false
   property string installPendingUrl: ""
+  property var reviewRepository: ({})
   // Status file for the detached installer. The file is created securely
   // via mktemp (XDG_RUNTIME_DIR) so the helper can truncate it without
   // following an attacker-controlled symlink. The plugin is installed but
@@ -1299,6 +1300,7 @@ Panel {
   // expectations and preventing arbitrary host installs. The plugin is
   // installed but NOT enabled by default.
   function requestInstall(rawText) {
+    if (reviewProcess.running) return
     var raw = String(rawText || "").trim()
     if (raw === "") return
     var url = root.extractInstallUrl(raw)
@@ -1310,7 +1312,35 @@ Panel {
     root.installFailed = false
     root.installResult = ""
     root.installPendingUrl = url
+    root.reviewRepository = ({})
+    root.fetchMarketplace()
+    if (!reviewProcess.running) {
+      reviewProcess.command = ["python3", root.runtimeStatePath, "review", url]
+      reviewProcess.running = true
+    }
     root.installConfirmOpen = true
+  }
+
+  property Process reviewProcess: Process {
+    stdout: StdioCollector { id: reviewOutput; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (command[3] !== root.installPendingUrl) return
+      try {
+        root.reviewRepository = exitCode === 0 ? JSON.parse(reviewOutput.text) : ({})
+      } catch (e) { root.reviewRepository = ({}) }
+    }
+  }
+
+  function reviewVerificationStatus() {
+    var entry = root.installReviewEntry()
+    if (root.marketplaceFetching || reviewProcess.running) return "Checking…"
+    if (root.marketplaceFetchFailed) return "Unable to check"
+    if (!entry) return "Not listed on Marketplace"
+    if (!entry.verified && entry.snapshotStatus !== "update-unverified") return "Unverified"
+    var commit = String(root.reviewRepository.commit || "")
+    if (!commit || !entry.snapshotCommit) return "Unable to check"
+    if (commit !== entry.snapshotCommit) return "Update Unverified"
+    return entry.verified ? "Verified on marketplace" : "Update Unverified"
   }
 
   function installReviewEntry() {
@@ -1616,7 +1646,8 @@ Panel {
 
   function refreshBarLayout() {
     if (root.barLayoutProcess.running) return
-    root.barLayoutProcess.command = ["bash", "-c", "cat \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json\""]
+    var configHome = Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+    root.barLayoutProcess.command = ["cat", configHome + "/omarchy/shell.json"]
     root.barLayoutProcess.running = true
   }
 
@@ -2402,7 +2433,7 @@ Panel {
       onConfirmRequested: root.confirmRestartShell()
     }
 
-    Dialogs.Install {
+    Dialogs.Review {
       anchors.fill: parent
       z: 10000
 
@@ -2431,14 +2462,18 @@ Panel {
       maximumWidth: Style.space(380)
       titleWrapMode: Text.WordWrap
       pluginName: root.installReviewEntry() ? (root.installReviewEntry().name || root.installPendingUrl.split("/").pop()) : root.installPendingUrl.split("/").pop()
-      pluginVersion: root.installReviewEntry() ? String(root.installReviewEntry().version || "") : ""
+      pluginVersion: ""
+      versionComparison: "\udb86\ude6f " + (root.installReviewEntry() ? String(root.installReviewEntry().version || "Unknown") : "Not listed")
+        + "    \uf09b " + (reviewProcess.running ? "Checking…" : String(root.reviewRepository.version || "Unavailable"))
+      reviewNote: reviewProcess.running || root.marketplaceFetching ? "Checking the latest repository and Marketplace details…"
+        : root.reviewVerificationStatus() === "Update Unverified" ? "The repository code is not covered by the current Marketplace verification, even if the versions match."
+        : root.reviewVerificationStatus() === "Unable to check" ? "Could not confirm whether the repository matches the verified Marketplace code."
+        : ""
+      confirmEnabled: !reviewProcess.running && !root.marketplaceFetching
       pluginDescription: root.installReviewEntry() ? String(root.installReviewEntry().description || "") : ""
       pluginIcon: root.installReviewEntry() ? String(root.installReviewEntry().icon || "") : ""
       marketplaceListed: root.installReviewEntry() !== null
-      marketplaceStatus: root.installReviewEntry()
-        ? (root.installReviewEntry().snapshotStatus === "update-unverified" ? "Update Unverified"
-          : root.installReviewEntry().verified ? "Verified on marketplace" : "Unverified")
-        : "Not listed on marketplace"
+      marketplaceStatus: root.reviewVerificationStatus()
       sourceUrl: root.installPendingUrl
       marketplaceUrl: root.installReviewEntryId() !== "" ? "https://plugins.omarchy.org/plugin.html?id=" + encodeURIComponent(root.installReviewEntryId()) : ""
       alreadyInstalled: root.installAlreadyInstalled()
