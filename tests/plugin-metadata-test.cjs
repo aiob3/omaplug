@@ -14,6 +14,9 @@ try {
     Quickshell: { env: () => temporary }
   });
   context.root = context;
+  context.Presentation = vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../panel/Presentation.js'), 'utf8')
+    .replace(/^\.pragma library\s*/, ''), context.Presentation);
   for (const name of ['applyPluginList', 'applyPluginMetadata', 'mergeMarketplaceMetadata', 'applyMarketplaceCatalog']) {
     const start = source.indexOf('  function ' + name + '(');
     assert.notEqual(start, -1);
@@ -65,11 +68,12 @@ try {
   vm.runInContext(page.slice(start, page.indexOf('\n  }', start) + 4), context);
   context.applyMarketplaceCatalog(JSON.stringify({ plugins: [{
     id: 'listed', verificationStatus: 'unverified',
-    verificationSnapshotStatus: 'verified', verificationCoverage: 'update-unverified', verificationCommit: 'abc'
+    verificationSnapshotStatus: 'verified', verificationCoverage: 'update-unverified', verificationCommit: 'a'.repeat(40)
   }] }));
   assert.equal(context.marketplaceMap.listed.snapshotStatus, 'update-unverified');
   context.updateStates = { folder: 'UPDATE' };
-  context.localCommits = { folder: 'abc' };
+  context.localCommits = { folder: 'a'.repeat(40) };
+  context.incomingCommits = { folder: 'b'.repeat(40) };
   context.marketplaceFetching = false;
   context.marketplaceFetchFailed = false;
   assert.equal(context.verificationText('listed', 'folder'), 'Update Unverified');

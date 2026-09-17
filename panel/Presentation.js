@@ -70,7 +70,15 @@ function iconColor(name) {
   return palette[Math.abs(hash) % palette.length]
 }
 
-function bulkUpdateKeys(rows, states, marketplace, scope) {
+function commitVerification(entry, commit) {
+  if (!entry) return "Not listed"
+  if (!entry.verified && entry.snapshotStatus !== "update-unverified") return "Unverified"
+  if (!/^[0-9a-f]{40}$/.test(String(commit || ""))
+      || !/^[0-9a-f]{40}$/.test(String(entry.snapshotCommit || ""))) return "Verification unavailable"
+  return entry.verified && commit === entry.snapshotCommit ? "Verified" : "Update Unverified"
+}
+
+function bulkUpdateKeys(rows, states, marketplace, scope, incomingCommits) {
   var sources = Object.create(null)
   var keys = []
   for (var i = 0; i < rows.length; i++) {
@@ -78,8 +86,9 @@ function bulkUpdateKeys(rows, states, marketplace, scope) {
     var key = String(row.sourceKey || "")
     if (!key || states[key] !== "UPDATE") continue
     var entry = marketplace[String(row.id)]
-    var allowed = scope === "all" || !!(entry && (entry.verified === true
-      || (scope === "pending" && entry.snapshotStatus === "update-unverified")))
+    var status = commitVerification(entry, (incomingCommits || {})[key])
+    var allowed = scope === "all" || status === "Verified"
+      || (scope === "pending" && status === "Update Unverified")
     if (sources[key] === undefined) {
       keys.push(key)
       sources[key] = true

@@ -199,7 +199,7 @@ Panel {
     return ["verified", "pending", "all"].indexOf(scope) >= 0 ? scope : "all"
   }
   readonly property var bulkUpdateKeys: Presentation.bulkUpdateKeys(
-    root.updateCheckRows, root.updateStates, root.marketplaceMap, root.bulkUpdateScope)
+    root.updateCheckRows, root.updateStates, root.marketplaceFetchFailed ? ({}) : root.marketplaceMap, root.bulkUpdateScope, root.incomingCommits)
   readonly property string bulkUpdateLabel: root.bulkUpdateScope === "verified"
     ? "Update verified" : root.bulkUpdateScope === "pending" ? "Update verified + pending" : "Update all"
 
@@ -241,6 +241,7 @@ Panel {
 
   // Update checking state, keyed by the plugin folder name (sourceKey).
   property var updateStates: ({})
+  property var incomingCommits: ({})
   property bool checkingUpdates: false
   property bool updatingAll: false
   property string updateSummary: ""
@@ -802,6 +803,11 @@ Panel {
     var key = parts[1]
     if (["CHECK", "CURRENT", "UPDATE", "LOCAL_CHANGES", "LOCAL", "ERROR"].indexOf(state) < 0 || key === "") return
     root.updateCheckSeen[key] = true
+    var incoming = Object.assign({}, root.incomingCommits)
+    delete incoming[key]
+    if ((state === "UPDATE" || state === "CURRENT") && /^[0-9a-f]{40}$/.test(parts[4] || ""))
+      incoming[key] = parts[4]
+    root.incomingCommits = incoming
     var st = {}
     for (var k in root.updateStates) st[k] = root.updateStates[k]
     st[key] = state
@@ -2275,6 +2281,7 @@ Panel {
       updateStates: root.updateStates
       marketplaceMap: root.marketplaceMap
       localCommits: root.pluginCommits
+      incomingCommits: root.incomingCommits
       marketplaceFetching: root.marketplaceFetching
       marketplaceFetchFailed: root.marketplaceFetchFailed
       checking: root.checkingUpdates
