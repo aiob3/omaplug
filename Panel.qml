@@ -202,6 +202,11 @@ Panel {
     root.updateCheckRows, root.updateStates, root.marketplaceFetchFailed ? ({}) : root.marketplaceMap, root.bulkUpdateScope, root.incomingCommits)
   readonly property string bulkUpdateLabel: root.bulkUpdateScope === "verified"
     ? "Update verified" : root.bulkUpdateScope === "pending" ? "Update verified + pending" : "Update all"
+  // Repositories picked on the updates page, keyed by sourceKey.
+  property var updateSelection: ({})
+  readonly property var updatableKeys: Presentation.updatableKeys(root.updateCheckRows, root.updateStates)
+  readonly property var selectedUpdateKeys: Presentation.selectedUpdateKeys(
+    root.updateCheckRows, root.updateStates, root.updateSelection)
 
   function persistAutoCheckSetting(values) {
     if (autoCheckSettingsProcess.running) return
@@ -882,6 +887,29 @@ Panel {
     if (root.checkingUpdates || root.updateDetachedRunning) return
     if (root.bulkUpdateScope !== "all" && root.marketplaceFetching) return
     root.startDetachedUpdates(root.bulkUpdateKeys.slice())
+  }
+
+  function toggleUpdateSelection(sourceKey) {
+    var next = {}
+    for (var k in root.updateSelection) next[k] = root.updateSelection[k]
+    if (next[sourceKey] === true) delete next[sourceKey]
+    else next[sourceKey] = true
+    root.updateSelection = next
+  }
+
+  function setAllUpdatesSelected(selected) {
+    var next = {}
+    if (selected) for (var i = 0; i < root.updatableKeys.length; i++) next[root.updatableKeys[i]] = true
+    root.updateSelection = next
+  }
+
+  function updateSelected() {
+    if (root.checkingUpdates || root.updateDetachedRunning) return
+    var keys = root.selectedUpdateKeys.slice()
+    if (keys.length === 0) return
+    root.startDetachedUpdates(keys)
+    // Keep the picks when the helper could not be launched.
+    if (root.updateDetachedRunning) root.updateSelection = {}
   }
 
   // Launch only the repositories proven updateable by the preceding check.
@@ -1833,6 +1861,7 @@ Panel {
     root.restartConfirmOpen = false
     root.removeSelectMode = false
     root.removeSelection = {}
+    root.updateSelection = {}
     root.closeRowMenu()
     root.controller.hide()
   }
@@ -2291,6 +2320,9 @@ Panel {
       bulkCount: root.bulkUpdateKeys.length
       bulkLabel: root.bulkUpdateLabel
       bulkReady: root.bulkUpdateScope === "all" || !root.marketplaceFetching
+      updateSelection: root.updateSelection
+      selectedCount: root.selectedUpdateKeys.length
+      updatableCount: root.updatableKeys.length
       summary: root.updateSummary
       iconFor: root.iconFor
       whatsNewUrlFor: root.whatsNewUrlFor
@@ -2300,6 +2332,9 @@ Panel {
       onOpenUrlRequested: function(url) { root.openExternal(url) }
       onUpdatePluginRequested: function(sourceKey) { root.updatePlugin(sourceKey) }
       onUpdateAllRequested: root.updateAll()
+      onUpdateSelectionToggled: function(sourceKey) { root.toggleUpdateSelection(sourceKey) }
+      onSelectAllUpdatesRequested: function(selected) { root.setAllUpdatesSelected(selected) }
+      onUpdateSelectedRequested: root.updateSelected()
     }
 
     Settings.Page {

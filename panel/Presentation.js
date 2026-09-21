@@ -98,3 +98,25 @@ function bulkUpdateKeys(rows, states, marketplace, scope, incomingCommits) {
   }
   return keys.filter(function(key) { return sources[key] })
 }
+
+// Every repository the last check proved updateable, once each, in row order.
+function updatableKeys(rows, states) {
+  var seen = Object.create(null)
+  var keys = []
+  for (var i = 0; i < rows.length; i++) {
+    var key = String(rows[i].sourceKey || "")
+    if (!key || seen[key] || states[key] !== "UPDATE") continue
+    seen[key] = true
+    keys.push(key)
+  }
+  return keys
+}
+
+// Picks on the updates page behave like the per-row UPDATE button, so the bulk
+// update scope does not apply. Selections left over from an earlier check are
+// dropped once their repository is no longer in the UPDATE state.
+function selectedUpdateKeys(rows, states, selection) {
+  return updatableKeys(rows, states).filter(function(key) {
+    return (selection || {})[key] === true
+  })
+}

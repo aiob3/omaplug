@@ -7,7 +7,7 @@
 Access it right from the Omarchy bar — it gives you a centralized place to view and organize the plugins you have installed. Here are a few things you can use it for:
 
 - Easily turn individual plugins on or off as needed.
-- Check for available updates and update them individually — or all at once.
+- Check for available updates and update them individually, a hand-picked selection, or all at once.
 - Remove plugins individually, or several in one go.
 - Jump straight to each plugin's repo, or browse the [Omarchy marketplace](https://plugins.omarchy.org).
 
@@ -55,6 +55,7 @@ Omaplug is listed on the marketplace: [plugins.omarchy.org/plugin.html?id=omaplu
 - **🔌 Enable / disable** — every discovered plugin (Omarchy's own and third-party) gets a simple toggle. Flipping it goes through the same registry the `omarchy plugin enable/disable` command uses, so what you see here is always what's really running.
 - **🔄 Check for updates** — scans every installed third-party plugin and distinguishes clean updates from local plugins, symlinked development plugins, local changes, and genuine fetch errors.
 - **⬆️ Update (or update everything)** — apply one update, or finish every proven-safe pending update from a single click, even while Omarchy reloads changed plugins.
+- **☑️ Update selected** — tick the pending updates you want (or **Select all**) and apply just those with **Update selected**. Like individual updates, a selection ignores the bulk-update scope.
 - **🛡️ Review before installing** — inspect a plugin's icon, name, version, description, source, and marketplace status before installation.
 - **⚙️ Configure updates and launcher access** — choose automatic update checks, bulk-update scope, and whether Omaplug appears in the Omarchy Apps menu.
 - **⌨️ Set plugin shortcuts** — assign per-plugin keyboard shortcuts with live conflict checking.

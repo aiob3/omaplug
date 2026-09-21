@@ -31,16 +31,25 @@ Rectangle {
   required property int bulkCount
   required property string bulkLabel
   required property bool bulkReady
+  required property var updateSelection
+  required property int selectedCount
+  required property int updatableCount
   required property string summary
 
   required property var iconFor
   required property var whatsNewUrlFor
+
+  readonly property bool selectionEnabled: !checking && !updateRunning
+  readonly property bool allSelected: updatableCount > 0 && selectedCount === updatableCount
 
   signal closeRequested
   signal tabRequested(int direction)
   signal openUrlRequested(string url)
   signal updatePluginRequested(string sourceKey)
   signal updateAllRequested
+  signal updateSelectionToggled(string sourceKey)
+  signal selectAllUpdatesRequested(bool selected)
+  signal updateSelectedRequested
 
   visible: open
   color: panelBackground
@@ -218,6 +227,34 @@ Rectangle {
                 anchors.rightMargin: Style.space(10)
                 anchors.bottomMargin: Style.space(12)
                 spacing: Style.space(10)
+
+                // Keeps icons aligned: the slot exists on every row while any
+                // update is pending, the box only on rows that can update.
+                Item {
+                  visible: page.updatableCount > 0
+                  Layout.preferredWidth: selectBox.implicitWidth
+                  Layout.preferredHeight: selectBox.implicitHeight
+                  Layout.alignment: Qt.AlignVCenter
+
+                  Button {
+                    id: selectBox
+                    readonly property string sourceKey: String(updateRow.modelData.sourceKey)
+                    readonly property bool picked: page.updateSelection[sourceKey] === true
+                    anchors.centerIn: parent
+                    visible: page.updateStates[sourceKey] === "UPDATE"
+                    text: picked ? "\uf14a" : "\uf0c8"
+                    selected: picked
+                    tooltipText: picked ? "Deselect for update" : "Select for update"
+                    enabled: page.selectionEnabled
+                    foreground: page.foreground
+                    accent: Color.accent
+                    fontFamily: page.fontFamily
+                    fontSize: Style.font.bodySmall
+                    horizontalPadding: Style.space(6)
+                    verticalPadding: Style.space(3)
+                    onClicked: page.updateSelectionToggled(sourceKey)
+                  }
+                }
 
                 Rectangle {
                   id: updateIcon
@@ -405,6 +442,53 @@ Rectangle {
                 height: 1
                 color: Qt.rgba(page.foreground.r, page.foreground.g, page.foreground.b, 0.12)
               }
+            }
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: Style.space(8)
+            Layout.maximumHeight: implicitHeight
+            visible: page.updatableCount > 0 && !page.checking
+
+            Button {
+              text: (page.allSelected ? "\uf14a  Clear selection" : "\uf0c8  Select all")
+              selected: page.allSelected
+              tooltipText: page.allSelected ? "Deselect every pending update" : "Select every pending update"
+              enabled: page.selectionEnabled
+              foreground: page.foreground
+              accent: Color.accent
+              fontFamily: page.fontFamily
+              fontSize: Style.font.bodySmall
+              horizontalPadding: Style.space(10)
+              verticalPadding: Style.space(3)
+              onClicked: page.selectAllUpdatesRequested(!page.allSelected)
+            }
+
+            Label {
+              text: page.selectedCount > 0
+                ? page.selectedCount + " of " + page.updatableCount + " selected"
+                : "Pick the updates to apply"
+              textFormat: Text.PlainText
+              color: Qt.darker(page.foreground, 1.5)
+              font.family: page.fontFamily
+              font.pixelSize: Style.font.bodySmall
+              Layout.fillWidth: true
+              elide: Label.ElideRight
+            }
+
+            Button {
+              text: "Update selected (" + page.selectedCount + ")"
+              tooltipText: "Update only the checked plugins, ignoring the update scope"
+              visible: page.selectedCount > 0
+              enabled: page.selectionEnabled
+              foreground: page.foreground
+              accent: Color.accent
+              fontFamily: page.fontFamily
+              fontSize: Style.font.bodySmall
+              horizontalPadding: Style.space(12)
+              verticalPadding: Style.space(3)
+              onClicked: page.updateSelectedRequested()
             }
           }
 
