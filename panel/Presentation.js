@@ -120,3 +120,25 @@ function selectedUpdateKeys(rows, states, selection) {
     return (selection || {})[key] === true
   })
 }
+
+var UPDATES_FILTER = 5
+
+// Scope filter choices for the main list. "Updates" is only offered while
+// updates are pending, but stays while it is the active filter so the
+// dropdown value always has a matching option.
+function scopeFilterOptions(pendingCount, currentMode) {
+  var options = [
+    { value: "0", label: "All plugins" },
+    { value: "1", label: "Omarchy" },
+    { value: "2", label: "Third-party" }
+  ]
+  if (pendingCount > 0 || currentMode === UPDATES_FILTER)
+    options.push({ value: String(UPDATES_FILTER), label: "Updates (" + pendingCount + ")" })
+  return options
+}
+
+// A check or an update rewrites states in place (CHECK, then the result), so
+// an emptied "Updates" filter is only left once nothing is in flight.
+function leaveUpdateFilter(mode, updatableCount, busy) {
+  return mode === UPDATES_FILTER && updatableCount === 0 && !busy
+}

@@ -117,7 +117,7 @@ Panel {
   }
 
   property string searchText: ""
-  property int filterMode: 2 // 0 all, 1 omarchy, 2 third-party, 4 adna
+  property int filterMode: 2 // 0 all, 1 omarchy, 2 third-party, 4 adna, 5 pending updates
   property string filterKind: "" // "" all types, else a kind like bar-widget
 
   // Kind choices derived from what is actually installed, so the dropdown
@@ -207,6 +207,10 @@ Panel {
   readonly property var updatableKeys: Presentation.updatableKeys(root.updateCheckRows, root.updateStates)
   readonly property var selectedUpdateKeys: Presentation.selectedUpdateKeys(
     root.updateCheckRows, root.updateStates, root.updateSelection)
+  readonly property bool updateFilterActive: root.filterMode === Presentation.UPDATES_FILTER
+  readonly property bool leaveEmptyUpdateFilter: Presentation.leaveUpdateFilter(
+    root.filterMode, root.updatableKeys.length, root.checkingUpdates || root.updateDetachedRunning)
+  onLeaveEmptyUpdateFilterChanged: if (root.leaveEmptyUpdateFilter) root.filterMode = 2
 
   function persistAutoCheckSetting(values) {
     if (autoCheckSettingsProcess.running) return
@@ -549,6 +553,8 @@ Panel {
     if (root.filterMode === 1 && !p.firstParty) return false
     if (root.filterMode === 2 && p.firstParty) return false
     if (root.filterMode === 4 && String(p.id).indexOf("adna.") !== 0) return false
+    if (root.filterMode === Presentation.UPDATES_FILTER
+        && root.updatableKeys.indexOf(String(p.sourceKey)) < 0) return false
     if (!root.rowMatchesKind(p)) return false
     var q = root.searchText.trim().toLowerCase()
     if (q === "") return true
@@ -2138,11 +2144,7 @@ Panel {
             Layout.preferredWidth: Style.space(140)
             showLabel: false
             value: String(root.filterMode)
-            options: [
-              { value: "0", label: "All plugins" },
-              { value: "1", label: "Omarchy" },
-              { value: "2", label: "Third-party" }
-            ]
+            options: Presentation.scopeFilterOptions(root.updatableKeys.length, root.filterMode)
             foreground: root.contentForeground
             background: root.panelBackground
             popupBorder: Util.alpha(root.contentForeground, 0.2)
@@ -2212,6 +2214,9 @@ Panel {
             removeSelectMode: root.removeSelectMode
             selectedForRemoval: root.removeSelection[pluginRow.modelData.id] === true
             removingPlugin: root.removingPlugin
+            updateSelectMode: root.updateFilterActive && !root.removeSelectMode
+            selectedForUpdate: root.updateSelection[String(pluginRow.modelData.sourceKey)] === true
+            updateSelectionEnabled: !root.checkingUpdates && !root.updateDetachedRunning
             pluginEnabled: root.pluginEnabled(pluginRow.modelData.id)
             updateRunning: root.updateDetachedRunning
             updatingId: root.updatingId
@@ -2223,6 +2228,7 @@ Panel {
             onRemovalSelectionRequested: function(pluginId) {
               root.toggleRemoveSelection(pluginId)
             }
+            onUpdateSelectionRequested: function(sourceKey) { root.toggleUpdateSelection(sourceKey) }
             onEnabledChangeRequested: function(pluginId, enabled) {
               root.setPluginEnabled(pluginId, enabled)
             }
@@ -2233,6 +2239,57 @@ Panel {
               var point = sourceItem.mapToItem(rowMenuOverlay, x, y)
               root.openRowMenu(pluginId, point.x, point.y)
             }
+          }
+        }
+
+        // Selection bar for the "Updates" filter; shares updateSelection with
+        // the updates page.
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: Style.space(8)
+          Layout.maximumHeight: implicitHeight
+          visible: root.updateFilterActive && !root.removeSelectMode
+            && root.updatableKeys.length > 0 && !root.checkingUpdates
+
+          Button {
+            readonly property bool allSelected: root.selectedUpdateKeys.length === root.updatableKeys.length
+            text: allSelected ? "  Clear selection" : "  Select all"
+            selected: allSelected
+            tooltipText: allSelected ? "Deselect every pending update" : "Select every pending update"
+            enabled: !root.updateDetachedRunning
+            foreground: root.contentForeground
+            accent: Color.accent
+            fontFamily: root.contentFontFamily
+            fontSize: Style.font.bodySmall
+            horizontalPadding: Style.space(10)
+            verticalPadding: Style.space(3)
+            onClicked: root.setAllUpdatesSelected(!allSelected)
+          }
+
+          Label {
+            text: root.selectedUpdateKeys.length > 0
+              ? root.selectedUpdateKeys.length + " of " + root.updatableKeys.length + " selected"
+              : "Pick the updates to apply"
+            textFormat: Text.PlainText
+            color: Qt.darker(root.contentForeground, 1.5)
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.bodySmall
+            Layout.fillWidth: true
+            elide: Label.ElideRight
+          }
+
+          Button {
+            visible: root.selectedUpdateKeys.length > 0
+            text: "Update selected (" + root.selectedUpdateKeys.length + ")"
+            tooltipText: "Update only the checked plugins, ignoring the update scope"
+            enabled: !root.updateDetachedRunning
+            foreground: root.contentForeground
+            accent: Color.accent
+            fontFamily: root.contentFontFamily
+            fontSize: Style.font.bodySmall
+            horizontalPadding: Style.space(12)
+            verticalPadding: Style.space(6)
+            onClicked: root.updateSelected()
           }
         }
 

@@ -21,6 +21,9 @@ Item {
   required property bool removeSelectMode
   required property bool selectedForRemoval
   required property bool removingPlugin
+  required property bool updateSelectMode
+  required property bool selectedForUpdate
+  required property bool updateSelectionEnabled
   required property bool pluginEnabled
   required property bool updateRunning
   required property string updatingId
@@ -30,6 +33,7 @@ Item {
   required property string fontFamily
 
   signal removalSelectionRequested(string pluginId)
+  signal updateSelectionRequested(string sourceKey)
   signal enabledChangeRequested(string pluginId, bool enabled)
   signal openUrlRequested(string url)
   signal sourceRequested(string sourceKey)
@@ -83,6 +87,22 @@ Item {
         horizontalPadding: Style.space(6)
         verticalPadding: Style.space(3)
         onClicked: pluginRow.removalSelectionRequested(pluginRow.modelData.id)
+      }
+
+      Button {
+        visible: pluginRow.updateSelectMode && pluginRow.updateState === "UPDATE"
+        text: pluginRow.selectedForUpdate ? "" : ""
+        selected: pluginRow.selectedForUpdate
+        tooltipText: pluginRow.selectedForUpdate ? "Deselect for update" : "Select for update"
+        enabled: pluginRow.updateSelectionEnabled
+        Layout.alignment: Qt.AlignVCenter
+        foreground: pluginRow.foreground
+        accent: Color.accent
+        fontFamily: pluginRow.fontFamily
+        fontSize: Style.font.bodySmall
+        horizontalPadding: Style.space(6)
+        verticalPadding: Style.space(3)
+        onClicked: pluginRow.updateSelectionRequested(String(pluginRow.modelData.sourceKey))
       }
 
       Item {

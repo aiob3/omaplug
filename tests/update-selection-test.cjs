@@ -45,4 +45,19 @@ assert.deepEqual(updatable(), ['alpha', 'beta', 'gamma']);
 assert.deepEqual(updatable(shared), ['alpha', 'beta', 'gamma']);
 assert.deepEqual(updatable(rows, { current: 'CURRENT' }), []);
 
+// The "Updates" scope filter is offered only while updates are pending...
+const values = (pending, mode) => Array.from(context.scopeFilterOptions(pending, mode), o => o.value);
+assert.deepEqual(values(0, 2), ['0', '1', '2']);
+assert.deepEqual(values(3, 2), ['0', '1', '2', '5']);
+assert.equal(context.scopeFilterOptions(3, 2)[3].label, 'Updates (3)');
+// ...but stays listed while it is the active filter, so the dropdown never shows a missing value.
+assert.deepEqual(values(0, 5), ['0', '1', '2', '5']);
+assert.equal(context.UPDATES_FILTER, 5);
+
+// Leave the emptied "Updates" filter only when no check or update is rewriting states.
+assert.equal(context.leaveUpdateFilter(5, 0, false), true);
+assert.equal(context.leaveUpdateFilter(5, 0, true), false);
+assert.equal(context.leaveUpdateFilter(5, 2, false), false);
+assert.equal(context.leaveUpdateFilter(2, 0, false), false);
+
 console.log('update-selection-test: ok');
