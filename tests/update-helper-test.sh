@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# The helper resolves plugins through XDG_CONFIG_HOME before HOME; keep the
+# fixture HOME authoritative on machines that export it.
+unset XDG_CONFIG_HOME
+
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 TMP=$(mktemp -d)
 trap 'rm -rf -- "$TMP"' EXIT
