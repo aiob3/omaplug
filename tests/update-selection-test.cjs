@@ -45,6 +45,13 @@ assert.deepEqual(updatable(), ['alpha', 'beta', 'gamma']);
 assert.deepEqual(updatable(shared), ['alpha', 'beta', 'gamma']);
 assert.deepEqual(updatable(rows, { current: 'CURRENT' }), []);
 
+// Pruning drops picks whose repository left UPDATE, so they cannot come back checked later.
+const pruned = (selection, sourceStates = states) =>
+  JSON.parse(JSON.stringify(context.prunedSelection(rows, sourceStates, selection)));
+assert.deepEqual(pruned({ alpha: true, beta: true }, { ...states, alpha: 'CURRENT' }), { beta: true });
+assert.deepEqual(pruned({ alpha: true, removed: true, current: true }), { alpha: true });
+assert.deepEqual(pruned({}), {});
+
 // The "Updates" scope filter is offered only while updates are pending...
 const values = (pending, mode) => Array.from(context.scopeFilterOptions(pending, mode), o => o.value);
 assert.deepEqual(values(0, 2), ['0', '1', '2']);

@@ -121,6 +121,15 @@ function selectedUpdateKeys(rows, states, selection) {
   })
 }
 
+// The selection map without repositories that left the UPDATE state, so a
+// pick does not come back checked when a later check finds a new update.
+function prunedSelection(rows, states, selection) {
+  var next = {}
+  var keys = selectedUpdateKeys(rows, states, selection)
+  for (var i = 0; i < keys.length; i++) next[keys[i]] = true
+  return next
+}
+
 var UPDATES_FILTER = 5
 
 // Scope filter choices for the main list. "Updates" is only offered while

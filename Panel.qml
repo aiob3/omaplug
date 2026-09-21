@@ -204,6 +204,9 @@ Panel {
     ? "Update verified" : root.bulkUpdateScope === "pending" ? "Update verified + pending" : "Update all"
   // Repositories picked on the updates page, keyed by sourceKey.
   property var updateSelection: ({})
+  // Set when "Update selected" launches; the picks are cleared only once the
+  // helper's job shows up in the status file.
+  property bool updateSelectionLaunchPending: false
   readonly property var updatableKeys: Presentation.updatableKeys(root.updateCheckRows, root.updateStates)
   readonly property var selectedUpdateKeys: Presentation.selectedUpdateKeys(
     root.updateCheckRows, root.updateStates, root.updateSelection)
@@ -883,6 +886,7 @@ Panel {
     else
       root.updateSummary = updates + " update" + (updates > 1 ? "s" : "") + " available"
         + root.updateErrorSuffix(errors)
+    root.pruneUpdateSelection()
   }
 
   function updatePlugin(sourceKey) {
@@ -909,13 +913,19 @@ Panel {
     root.updateSelection = next
   }
 
+  // Runs after a check or an update job settles, never mid-check: states pass
+  // through CHECK while a check streams, which would drop valid picks.
+  function pruneUpdateSelection() {
+    root.updateSelection = Presentation.prunedSelection(
+      root.updateCheckRows, root.updateStates, root.updateSelection)
+  }
+
   function updateSelected() {
     if (root.checkingUpdates || root.updateDetachedRunning) return
     var keys = root.selectedUpdateKeys.slice()
     if (keys.length === 0) return
     root.startDetachedUpdates(keys)
-    // Keep the picks when the helper could not be launched.
-    if (root.updateDetachedRunning) root.updateSelection = {}
+    root.updateSelectionLaunchPending = root.updateDetachedRunning
   }
 
   // Launch only the repositories proven updateable by the preceding check.
@@ -1004,6 +1014,10 @@ Panel {
     root.updateExpectedJobId = jobId
     root.updateAwaitingStart = false
     updateStartTimer.stop()
+    if (expectingJob && root.updateSelectionLaunchPending) {
+      root.updateSelectionLaunchPending = false
+      root.updateSelection = {}
+    }
     if (pid !== root.updateProbePid) {
       root.updateProbePid = pid
       root.updateDeadProbeCount = 0
@@ -1030,6 +1044,7 @@ Panel {
         root.updateSummary = successes === 1 ? "1 plugin updated" : successes + " plugins updated"
       else
         root.updateSummary = successes + " updated, " + failures + " failed"
+      root.pruneUpdateSelection()
       root.refreshPlugins()
       return
     }
@@ -1043,6 +1058,8 @@ Panel {
 
   function recoverExistingUpdateOrFailStart() {
     if (!root.updateAwaitingStart) return
+    // Adopting another job must not clear this launch's picks.
+    root.updateSelectionLaunchPending = false
     root.updateAwaitingStart = false
     root.updateExpectedJobId = ""
     root.updateDetachedRunning = false
@@ -1052,6 +1069,7 @@ Panel {
   }
 
   function markUpdateInterrupted(message) {
+    root.updateSelectionLaunchPending = false
     root.updateDetachedRunning = false
     root.updateAwaitingStart = false
     root.updatingAll = false
